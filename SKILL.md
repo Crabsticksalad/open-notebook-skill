@@ -1,7 +1,7 @@
 ---
 name: open-notebook
 description: Access and manage a self-hosted Open Notebook research system (NotebookLM alternative). Create notebooks, add sources (text/URL/file), cross-notebook search, and RAG-chat with your research notes. Use only when the user explicitly asks to save, search, or ask about specific content they have stored.
-version: 1.3.0
+version: 1.3.1
 homepage: "https://github.com/Crabsticksalad/open-notebook-skill"
 permissions:
   network:
@@ -81,7 +81,9 @@ The bridge is a small FastAPI app (`main.py`) that:
 - Authenticates agents via `X-API-Key` header
 - Audits every call to a log file
 - Enforces per-notebook allowlists (using `check_notebook` function)
+- Filters `list-notebooks` to only return notebooks the agent is allowed to access
 - Verifies source ownership before `get-source` and `delete-source` — agents cannot fetch or delete sources belonging to notebooks they have no access to
+- `search` is intentionally cross-notebook (queries all embeddings) — agents should only have access to notebooks they are authorized for via `allowed_notebooks`
 
 ### Minimal bridge main.py
 
@@ -132,6 +134,13 @@ async def list_notebooks(agent=Depends(auth)):
     audit.info(f"{agent['name']} GET /v1/notebooks")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/notebooks", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
+    # Filter to notebooks this agent is allowed to access
+    if r.status_code == 200:
+        notebooks = r.json()
+        allowed = agent.get("allowed_notebooks", [])
+        if allowed != "*" and allowed != ["*"]:
+            notebooks = [nb for nb in notebooks if nb.get("id") in (allowed or [])]
+        return Response(content=json.dumps(notebooks), status_code=r.status_code)
     return Response(content=r.content, status_code=r.status_code)
 
 @app.post("/v1/notebooks")

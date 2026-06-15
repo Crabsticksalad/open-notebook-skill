@@ -107,10 +107,11 @@ clawhub install crabsticksalad/open-notebook
 
 ## Usage
 
-The agent uses the skill automatically when you ask about research, notes, or things you've saved. Examples:
+The agent uses this skill only when you **explicitly** ask it to save, search, or retrieve stored content. Examples:
 
-- "Save this to my research: ..."
+- "Save this to my notebook: ..."
 - "What did I save about mushrooms?"
+- "Search my notes about X"
 - "Create a new notebook for my travel plans"
 - "Ask my notes about the toxicity of Amanita muscaria"
 
@@ -119,7 +120,7 @@ The agent uses the skill automatically when you ask about research, notes, or th
 | Command | Description |
 |---|---|
 | `on.sh health` | Bridge + upstream liveness |
-| `on.sh list-notebooks` | List all notebooks |
+| `on.sh list-notebooks` | List notebooks this agent is allowed to access |
 | `on.sh get-notebook <id>` | Notebook details |
 | `on.sh create-notebook "Title" "Description"` | Create notebook |
 | `on.sh add-source <nb-id> --text "..."` | Add text source |
@@ -127,8 +128,8 @@ The agent uses the skill automatically when you ask about research, notes, or th
 | `on.sh get-source <id>` | Check source status |
 | `on.sh search "query"` | Cross-notebook search |
 | `on.sh ask <nb-id> "question"` | RAG chat |
-| `on.sh delete-source <id>` | Remove source |
-| `on.sh delete-notebook <id>` | Remove notebook |
+| `on.sh delete-source <id>` | ⚠️ Remove source (irreversible) |
+| `on.sh delete-notebook <id>` | ⚠️ Remove notebook (irreversible) |
 
 ## Privacy
 
