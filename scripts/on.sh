@@ -4,7 +4,7 @@
 set -euo pipefail
 
 BRIDGE_URL="${OPEN_NOTEBOOK_BRIDGE_URL:-http://127.0.0.1:5077}"
-API_KEY="${OPEN_NOTEBOOK_API_KEY:?OPEN_NOTEBOOK_API_KEY not set — verify it is in ~/.openclaw/.env and in OPENCLAW_SERVICE_MANAGED_ENV_KEYS in the gateway service unit}"
+API_KEY="${OPEN_NOTEBOOK_API_KEY:?OPEN_NOTEBOOK_API_KEY not set — add it to ~/.openclaw/.env and restart the gateway}"
 
 call() {
   local method="$1" path="$2" body="${3:-}"
@@ -101,7 +101,7 @@ case "${1:-help}" in
 
   *)
     cat <<EOF >&2
-on.sh — open-notebook bridge client (v1.0.0)
+on.sh — open-notebook bridge client (v1.2.0)
 
 Commands:
   health                                       bridge + open-notebook liveness

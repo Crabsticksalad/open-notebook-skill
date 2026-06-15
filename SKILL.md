@@ -87,7 +87,7 @@ The bridge is a small FastAPI app (`main.py`) that:
 ```python
 #!/usr/bin/env python3
 """Open Notebook Bridge — auth + audit + per-agent allowlist wrapper."""
-import json, os
+import json, os, logging
 from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException, Depends, Request
 from fastapi.responses import Response
@@ -96,14 +96,19 @@ import httpx, uvicorn
 UPSTREAM = "http://127.0.0.1:5055"
 BRIDGE_PORT = int(os.environ.get("BRIDGE_PORT", "5077"))
 AGENTS_FILE = Path(os.environ.get("AGENTS_FILE", "agents.json")).expanduser()
+AUDIT_LOG = Path(os.environ.get("AUDIT_LOG", "audit.log")).expanduser()
 ON_PASSWORD = os.environ.get("OPEN_NOTEBOOK_PASSWORD", "")
 
 AGENTS = json.loads(AGENTS_FILE.read_text()) if AGENTS_FILE.exists() else {}
+logging.basicConfig(filename=str(AUDIT_LOG), level=logging.INFO,
+                    format="%(asctime)s %(levelname)s %(message)s")
+audit = logging.getLogger("audit")
 
 app = FastAPI()
 
 async def auth(x_api_key: str | None = Header(None)):
     if not x_api_key or x_api_key not in AGENTS:
+        audit.warning(f"REJECTED unknown api key ...{x_api_key[-8:]}")
         raise HTTPException(401, "invalid api key")
     return AGENTS[x_api_key]
 
@@ -113,6 +118,7 @@ async def health():
 
 @app.get("/v1/notebooks")
 async def list_notebooks(agent=Depends(auth)):
+    audit.info(f"{agent['name']} GET /v1/notebooks")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/notebooks", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
@@ -120,18 +126,21 @@ async def list_notebooks(agent=Depends(auth)):
 @app.post("/v1/notebooks")
 async def create_notebook(request: Request, agent=Depends(auth)):
     body = await request.json()
+    audit.info(f"{agent['name']} POST /v1/notebooks")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{UPSTREAM}/api/notebooks", json=body, headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
 
 @app.get("/v1/notebooks/{notebook_id}")
 async def get_notebook(notebook_id: str, agent=Depends(auth)):
+    audit.info(f"{agent['name']} GET /v1/notebooks/{notebook_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/notebooks/{notebook_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
 
 @app.delete("/v1/notebooks/{notebook_id}")
 async def delete_notebook(notebook_id: str, agent=Depends(auth)):
+    audit.info(f"{agent['name']} DELETE /v1/notebooks/{notebook_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.delete(f"{UPSTREAM}/api/notebooks/{notebook_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
@@ -139,18 +148,21 @@ async def delete_notebook(notebook_id: str, agent=Depends(auth)):
 @app.post("/v1/notebooks/{notebook_id}/sources")
 async def add_source(notebook_id: str, request: Request, agent=Depends(auth)):
     body = await request.json()
+    audit.info(f"{agent['name']} POST /v1/notebooks/{notebook_id}/sources")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{UPSTREAM}/api/sources/json", json={**body, "notebook_id": notebook_id}, headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
 
 @app.get("/v1/sources/{source_id}")
 async def get_source(source_id: str, agent=Depends(auth)):
+    audit.info(f"{agent['name']} GET /v1/sources/{source_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/sources/{source_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
 
 @app.delete("/v1/sources/{source_id}")
 async def delete_source(source_id: str, agent=Depends(auth)):
+    audit.info(f"{agent['name']} DELETE /v1/sources/{source_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.delete(f"{UPSTREAM}/api/sources/{source_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
@@ -158,6 +170,7 @@ async def delete_source(source_id: str, agent=Depends(auth)):
 @app.post("/v1/search")
 async def search(request: Request, agent=Depends(auth)):
     body = await request.json()
+    audit.info(f"{agent['name']} POST /v1/search")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{UPSTREAM}/api/search", json=body, headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
@@ -165,6 +178,7 @@ async def search(request: Request, agent=Depends(auth)):
 @app.post("/v1/notebooks/{notebook_id}/chat")
 async def ask(notebook_id: str, request: Request, agent=Depends(auth)):
     body = await request.json()
+    audit.info(f"{agent['name']} POST /v1/notebooks/{notebook_id}/chat")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{UPSTREAM}/api/ask", json={**body, "notebook_id": notebook_id}, headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
