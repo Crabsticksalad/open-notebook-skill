@@ -101,7 +101,7 @@ case "${1:-help}" in
 
   *)
     cat <<EOF >&2
-on.sh  -  open-notebook bridge client (v1.2.0)
+on.sh  -  open-notebook bridge client (v1.3.0)
 
 Commands:
   health                                       bridge + open-notebook liveness
@@ -113,7 +113,7 @@ Commands:
   get-source ID                                source status (poll while processing)
   search QUERY                                 cross-notebook vector search
   ask NB QUESTION                              RAG answer from one notebook
-  delete-source ID                             remove a source
+  delete-source ID                             ⚠️ remove a source (irreversible)
   delete-notebook ID                           remove a notebook (irreversible)
 
 Env:

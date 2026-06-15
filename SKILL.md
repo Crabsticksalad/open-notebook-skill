@@ -1,7 +1,7 @@
 ---
 name: open-notebook
 description: Access and manage a self-hosted Open Notebook research system (NotebookLM alternative). Create notebooks, add sources (text/URL/file), cross-notebook search, and RAG-chat with your research notes. Use only when the user explicitly asks to save, search, or ask about specific content they have stored.
-version: 1.2.0
+version: 1.3.0
 homepage: "https://github.com/Crabsticksalad/open-notebook-skill"
 permissions:
   network:
@@ -81,6 +81,7 @@ The bridge is a small FastAPI app (`main.py`) that:
 - Authenticates agents via `X-API-Key` header
 - Audits every call to a log file
 - Enforces per-notebook allowlists (using `check_notebook` function)
+- Verifies source ownership before `get-source` and `delete-source` — agents cannot fetch or delete sources belonging to notebooks they have no access to
 
 ### Minimal bridge main.py
 
@@ -123,7 +124,8 @@ async def auth(x_api_key: str | None = Header(None)):
 
 @app.get("/v1/health")
 async def health():
-    return {"status": "ok", "agents": len(AGENTS)}
+    # Returns only a status — no agent count or deployment metadata leaked
+    return {"status": "ok"}
 
 @app.get("/v1/notebooks")
 async def list_notebooks(agent=Depends(auth)):
@@ -167,15 +169,32 @@ async def add_source(notebook_id: str, request: Request, agent=Depends(auth)):
 
 @app.get("/v1/sources/{source_id}")
 async def get_source(source_id: str, agent=Depends(auth)):
-    audit.info(f"{agent['name']} GET /v1/sources/{source_id}")
+    # Verify the source belongs to an allowed notebook before returning details
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/sources/{source_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
+        if r.status_code == 200:
+            source = r.json()
+            check_notebook(agent, source.get("notebook_id"))
+        elif r.status_code == 404:
+            pass  # let the 404 propagate — source doesn't exist
+        else:
+            r.raise_for_status()
+    audit.info(f"{agent['name']} GET /v1/sources/{source_id}")
     return Response(content=r.content, status_code=r.status_code)
 
 @app.delete("/v1/sources/{source_id}")
 async def delete_source(source_id: str, agent=Depends(auth)):
-    audit.info(f"{agent['name']} DELETE /v1/sources/{source_id}")
+    # Verify the source belongs to an allowed notebook before deleting it
     async with httpx.AsyncClient(timeout=120) as c:
+        r = await c.get(f"{UPSTREAM}/api/sources/{source_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
+        if r.status_code == 200:
+            source = r.json()
+            check_notebook(agent, source.get("notebook_id"))
+        elif r.status_code == 404:
+            pass  # source already gone — still enforce auth on the request
+        else:
+            r.raise_for_status()
+        audit.info(f"{agent['name']} DELETE /v1/sources/{source_id}")
         r = await c.delete(f"{UPSTREAM}/api/sources/{source_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
     return Response(content=r.content, status_code=r.status_code)
 
@@ -234,8 +253,8 @@ Use the `exec` tool to run `{baseDir}/scripts/on.sh`. All commands return JSON.
 | `on.sh get-source <id>` | Check source processing status |
 | `on.sh search "natural language query"` | Cross-notebook vector search |
 | `on.sh ask <nb-id> "Question?"` | RAG answer with citations, one notebook |
-| `on.sh delete-source <id>` | Remove a source |
-| `on.sh delete-notebook <id>` | Remove a notebook (irreversible) |
+| `on.sh delete-source <id>` | ⚠️ Remove a source (irreversible) |
+| `on.sh delete-notebook <id>` | ⚠️ Remove a notebook (irreversible) |
 
 ## Conventions
 
