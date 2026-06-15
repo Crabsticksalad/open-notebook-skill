@@ -1,6 +1,6 @@
 ---
 name: open-notebook
-description: Access and manage a self-hosted Open Notebook research system (NotebookLM alternative). Create themed notebooks, add sources (text/URL/file), cross-notebook search, and RAG-chat with your research notes. Use when the user wants to save findings, recall prior research, organize notes into themes, or query their knowledge base.
+description: Access and manage a self-hosted Open Notebook research system (NotebookLM alternative). Create notebooks, add sources (text/URL/file), cross-notebook search, and RAG-chat with your research notes. Use only when the user explicitly asks to save, search, or ask about specific content they have stored.
 version: 1.2.0
 homepage: "https://github.com/Crabsticksalad/open-notebook-skill"
 permissions:
@@ -80,7 +80,7 @@ systemctl --user restart openclaw-gateway
 The bridge is a small FastAPI app (`main.py`) that:
 - Authenticates agents via `X-API-Key` header
 - Audits every call to a log file
-- Enforces per-notebook allowlists
+- Enforces per-notebook allowlists (using `check_notebook` function)
 
 ### Minimal bridge main.py
 
@@ -105,6 +105,15 @@ logging.basicConfig(filename=str(AUDIT_LOG), level=logging.INFO,
 audit = logging.getLogger("audit")
 
 app = FastAPI()
+
+def check_notebook(agent, notebook_id):
+    """Enforce allowed_notebooks allowlist. Set allowed_notebooks to ['*'] for full access."""
+    allowed = agent.get("allowed_notebooks", [])
+    if allowed == "*" or allowed == ["*"]:
+        return
+    if notebook_id not in allowed:
+        audit.warning(f"DENIED {agent['name']} access to {notebook_id}")
+        raise HTTPException(403, f"not allowed to access {notebook_id}")
 
 async def auth(x_api_key: str | None = Header(None)):
     if not x_api_key or x_api_key not in AGENTS:
@@ -133,6 +142,7 @@ async def create_notebook(request: Request, agent=Depends(auth)):
 
 @app.get("/v1/notebooks/{notebook_id}")
 async def get_notebook(notebook_id: str, agent=Depends(auth)):
+    check_notebook(agent, notebook_id)
     audit.info(f"{agent['name']} GET /v1/notebooks/{notebook_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.get(f"{UPSTREAM}/api/notebooks/{notebook_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
@@ -140,6 +150,7 @@ async def get_notebook(notebook_id: str, agent=Depends(auth)):
 
 @app.delete("/v1/notebooks/{notebook_id}")
 async def delete_notebook(notebook_id: str, agent=Depends(auth)):
+    check_notebook(agent, notebook_id)
     audit.info(f"{agent['name']} DELETE /v1/notebooks/{notebook_id}")
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.delete(f"{UPSTREAM}/api/notebooks/{notebook_id}", headers={"Authorization": f"Bearer {ON_PASSWORD}"})
@@ -147,6 +158,7 @@ async def delete_notebook(notebook_id: str, agent=Depends(auth)):
 
 @app.post("/v1/notebooks/{notebook_id}/sources")
 async def add_source(notebook_id: str, request: Request, agent=Depends(auth)):
+    check_notebook(agent, notebook_id)
     body = await request.json()
     audit.info(f"{agent['name']} POST /v1/notebooks/{notebook_id}/sources")
     async with httpx.AsyncClient(timeout=120) as c:
@@ -177,6 +189,7 @@ async def search(request: Request, agent=Depends(auth)):
 
 @app.post("/v1/notebooks/{notebook_id}/chat")
 async def ask(notebook_id: str, request: Request, agent=Depends(auth)):
+    check_notebook(agent, notebook_id)
     body = await request.json()
     audit.info(f"{agent['name']} POST /v1/notebooks/{notebook_id}/chat")
     async with httpx.AsyncClient(timeout=120) as c:
