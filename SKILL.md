@@ -31,7 +31,7 @@ Self-hosted NotebookLM alternative for OpenClaw agents. The agent reaches open-n
 ## Compatibility
 
 - **open-notebook:** v1.9.0 or later
-- **Bridge endpoint contract:** `DELETE /v1/sources/{id}`, `GET /v1/sources/{id}`, `GET /v1/notebooks/{id}` — all required
+- **Bridge endpoint contract:** `DELETE /v1/sources/{id}`, `GET /v1/sources/{id}`, `GET /v1/notebooks/{id}`  -  all required
 - **Tested embedding model:** `perplexity/pplx-embed-v1-4b` (OpenRouter)
 
 ## When to use
@@ -45,7 +45,7 @@ Self-hosted NotebookLM alternative for OpenClaw agents. The agent reaches open-n
 
 ## Install / Setup
 
-This skill is a **bridge client** — it does nothing on its own. You need a running open-notebook deployment and the bridge service.
+This skill is a **bridge client**  -  it does nothing on its own. You need a running open-notebook deployment and the bridge service.
 
 ### 1. Deploy open-notebook
 
@@ -86,7 +86,7 @@ The bridge is a small FastAPI app (`main.py`) that:
 
 ```python
 #!/usr/bin/env python3
-"""Open Notebook Bridge — auth + audit + per-agent allowlist wrapper."""
+"""Open Notebook Bridge  -  auth + audit + per-agent allowlist wrapper."""
 import json, os, logging
 from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException, Depends, Request
@@ -240,15 +240,15 @@ Use the `exec` tool to run `{baseDir}/scripts/on.sh`. All commands return JSON.
 | HTTP 401 `{"detail":"invalid api key"}` | Wrong key | Compare to your agents.json |
 | HTTP 403 `agent ... not allowed to access ...` | This agent's allowlist excludes the notebook | `list-notebooks` to see what this agent can see |
 | HTTP 404 | Bad notebook ID | Re-list notebooks to get the correct ID |
-| HTTP 500 (get-source) | Bad source ID | Upstream returns 500 for non-existent source IDs — verify the source exists before polling |
+| HTTP 500 (get-source) | Bad source ID | Upstream returns 500 for non-existent source IDs  -  verify the source exists before polling |
 | Timeout on `ask` (>120s) | Upstream LLM call slow | Narrow the question |
 
 ## Privacy
 
-Notebook data (sources, notes, chat, embeddings, files) is **not encrypted at rest** in the upstream open-notebook stack — only LLM API keys are encrypted. Do not put secrets, credentials, or sensitive PII into a notebook.
+Notebook data (sources, notes, chat, embeddings, files) is **not encrypted at rest** in the upstream open-notebook stack  -  only LLM API keys are encrypted. Do not put secrets, credentials, or sensitive PII into a notebook.
 
 ## Files
 
-- `{baseDir}/scripts/on.sh` — bridge client (bash, curl + jq with python3 fallback)
+- `{baseDir}/scripts/on.sh`  -  bridge client (bash, curl + jq with python3 fallback)
 - Bridge service: runs locally on port 5077; audit log path is deployment-specific
 - Per-agent key registry: deployment-specific path (set during bridge setup)

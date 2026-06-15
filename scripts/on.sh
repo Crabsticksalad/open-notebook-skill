@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Open Notebook — bridge client for OpenClaw agents
+# Open Notebook  -  bridge client for OpenClaw agents
 # Bridge: http://127.0.0.1:5077 → open-notebook API at 127.0.0.1:5055
 set -euo pipefail
 
 BRIDGE_URL="${OPEN_NOTEBOOK_BRIDGE_URL:-http://127.0.0.1:5077}"
-API_KEY="${OPEN_NOTEBOOK_API_KEY:?OPEN_NOTEBOOK_API_KEY not set — add it to ~/.openclaw/.env and restart the gateway}"
+API_KEY="${OPEN_NOTEBOOK_API_KEY:?OPEN_NOTEBOOK_API_KEY not set  -  add it to ~/.openclaw/.env and restart the gateway}"
 
 call() {
   local method="$1" path="$2" body="${3:-}"
@@ -101,7 +101,7 @@ case "${1:-help}" in
 
   *)
     cat <<EOF >&2
-on.sh — open-notebook bridge client (v1.2.0)
+on.sh  -  open-notebook bridge client (v1.2.0)
 
 Commands:
   health                                       bridge + open-notebook liveness

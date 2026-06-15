@@ -2,5 +2,5 @@
   "version": "1.2.0",
   "author": "Crabsticksalad",
   "tags": ["open-notebook", "research", "notes", "notebooklm", "rag", "knowledge-base", "embedding"],
-  "description": "Open Notebook skill for OpenClaw — bridge client for lfnovo/open-notebook. Create notebooks, add sources, cross-notebook search, and RAG chat with your research notes."
+  "description": "Open Notebook skill for OpenClaw  -  bridge client for lfnovo/open-notebook. Create notebooks, add sources, cross-notebook search, and RAG chat with your research notes."
 }

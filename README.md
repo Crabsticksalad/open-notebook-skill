@@ -1,6 +1,6 @@
 # open-notebook-skill
 
-**Open Notebook skill for OpenClaw** — bridge client for [lfnovo/open-notebook](https://github.com/lfnovo/open-notebook). Create themed notebooks, add sources, cross-notebook search, and RAG-chat with your research notes.
+**Open Notebook skill for OpenClaw**  -  bridge client for [lfnovo/open-notebook](https://github.com/lfnovo/open-notebook). Create themed notebooks, add sources, cross-notebook search, and RAG-chat with your research notes.
 
 ## What this is
 
@@ -12,9 +12,9 @@ Without a running open-notebook deployment + bridge, this skill does nothing.
 
 - **Create notebooks** by topic (research, health, travel, etc.)
 - **Add sources** as text, URLs, or files
-- **Cross-notebook vector search** — find anything you've saved
-- **RAG chat** — ask questions about your research and get cited answers
-- **Python fallback** — works even without `jq` installed
+- **Cross-notebook vector search**  -  find anything you've saved
+- **RAG chat**  -  ask questions about your research and get cited answers
+- **Python fallback**  -  works even without `jq` installed
 
 ## Requirements
 
@@ -41,7 +41,7 @@ The bridge is a small FastAPI app. Create `bridge/main.py`, `bridge/agents.json`
 mkdir -p ~/open-notebook/bridge
 cd ~/open-notebook/bridge
 
-# Create agents.json — add your OpenClaw agent key
+# Create agents.json  -  add your OpenClaw agent key
 echo '{"<your-openclaw-agent-key>":{"name":"onyx","allowed_notebooks":"*","readwrite":true}}' > agents.json
 chmod 600 agents.json
 
@@ -149,7 +149,7 @@ The `OPEN_NOTEBOOK_API_KEY` env var is not set. Verify it's in `~/.openclaw/.env
 The agent's key in `agents.json` doesn't have access to that notebook. Check `allowed_notebooks` in `agents.json`.
 
 ### Source not found in search
-Embedding is async — the source may not be indexed yet. Poll `get-source <id>` until `status: completed`.
+Embedding is async  -  the source may not be indexed yet. Poll `get-source <id>` until `status: completed`.
 
 ## License
 
