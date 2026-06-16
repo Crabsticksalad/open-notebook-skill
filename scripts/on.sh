@@ -101,7 +101,7 @@ case "${1:-help}" in
 
   *)
     cat <<EOF >&2
-on.sh  -  open-notebook bridge client (v1.3.1)
+on.sh  -  open-notebook bridge client (v1.3.2)
 
 Commands:
   health                                       bridge + open-notebook liveness

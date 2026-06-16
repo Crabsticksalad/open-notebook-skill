@@ -1,7 +1,7 @@
 ---
 name: open-notebook
 description: Access and manage a self-hosted Open Notebook research system (NotebookLM alternative). Create notebooks, add sources (text/URL/file), cross-notebook search, and RAG-chat with your research notes. Use only when the user explicitly asks to save, search, or ask about specific content they have stored.
-version: 1.3.1
+version: 1.3.2
 homepage: "https://github.com/Crabsticksalad/open-notebook-skill"
 permissions:
   network:
@@ -200,7 +200,7 @@ async def delete_source(source_id: str, agent=Depends(auth)):
             source = r.json()
             check_notebook(agent, source.get("notebook_id"))
         elif r.status_code == 404:
-            pass  # source already gone — still enforce auth on the request
+            return Response(content=r.content, status_code=404)
         else:
             r.raise_for_status()
         audit.info(f"{agent['name']} DELETE /v1/sources/{source_id}")
